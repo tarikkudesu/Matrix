@@ -6,7 +6,24 @@ from Matrix import Matrix
 
 
 def main() -> None:
-    print(Matrix([[8.0, 5.0, -2.0], [4.0, 7.0, 20.0], [7.0, 6.0, 1.0]]).inverse())
+    print(Matrix(
+        [[1.0, 0.0, 0.0],
+         [0.0, 1.0, 0.0],
+         [0.0, 0.0, 1.0]]
+        ).inverse())
+    print()
+    print(Matrix(
+        [[2.0, 0.0, 0.0],
+         [0.0, 2.0, 0.0],
+         [0.0, 0.0, 2.0]]
+        ).inverse())
+    print()
+    print(Matrix(
+        [[8.0, 5.0, -2.0],
+         [4.0, 7.0, 20.0],
+         [7.0, 6.0, 1.0]]
+        ).inverse())
+    print()
 
 
 if __name__ == "__main__":

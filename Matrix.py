@@ -57,7 +57,7 @@ class Vector(Generic[T]):
         return f"Vector({self.values!r})"
 
     def __str__(self) -> str:
-        return "\n".join(f"[{value}]" for value in self.values)
+        return str(self.values)
 
     def copy(self) -> Vector[T]:
         return Vector(self.values)
@@ -140,7 +140,7 @@ class Matrix(Generic[T]):
         return f"Matrix({self.rows!r})"
 
     def __str__(self) -> str:
-        return "\n".join(str(row) for row in self.rows)
+        return "[" + "\n ".join(str(row) for row in self.rows) + "]"
 
     def copy(self) -> Matrix[T]:
         return Matrix(self.rows)
@@ -236,28 +236,37 @@ class Matrix(Generic[T]):
     def _reduced_rows(self) -> tuple[list[list[Scalar]], int]:
         """Compute a reduced row-echelon copy and its number of pivots."""
         rows: list[list[Scalar]] = [list(row) for row in self.rows]
-        pivot_row = 0
         pivot_count = 0
+        pivot_row = 0
 
         for column in range(self.column_count):
             if pivot_row == self.row_count:
                 break
 
+            # get the index of the largest member (absolute value) in a column
             best_row = max(
                 range(pivot_row, self.row_count),
                 key=lambda row: abs(rows[row][column]),
             )
+            # if the largest member is 0 just procede, cause she said so
             if _is_near_zero(rows[best_row][column]):
                 continue
 
+            # substitue the rows so that the best one is on the current pivot
             rows[pivot_row], rows[best_row] = rows[best_row], rows[pivot_row]
+            # get the pivot, at this is as far as I can understand, afterwards only god understands
             pivot = rows[pivot_row][column]
+            # here you make the pivot into a 1, then the rest of the row, appearantly that's how the echelon intended for it to be
             rows[pivot_row] = [value / pivot for value in rows[pivot_row]]
-
+    
+            # now for every other row in that column, you make it a 0
             for row in range(self.row_count):
+                # the pivot row has already been treated
                 if row == pivot_row:
                     continue
+                # the factor is the current value, remember the R2 -> R2 - factor * R1, you use this to nullify the current member
                 factor = rows[row][column]
+                # that is if it's not already 0
                 if not _is_near_zero(factor):
                     rows[row] = [value - factor * pivot_value for value, pivot_value in zip(rows[row], rows[pivot_row])]
 
@@ -277,6 +286,7 @@ class Matrix(Generic[T]):
 
     def determinant(self) -> T:
         """Return the determinant using Gaussian elimination.  Complexity: O(n³)."""
+        # require square, this absolutly needed a comment though
         self._require_square()
         size = self.row_count
         if size == 0:
@@ -292,12 +302,16 @@ class Matrix(Generic[T]):
             if _is_near_zero(pivot):
                 return 0  # type: ignore[return-value]
             if best_row != column:
+                # swaping rows reverses the sign of the determinant
                 rows[column], rows[best_row] = rows[best_row], rows[column]
                 sign = -sign
             pivot = rows[column][column]
+            # well, a triangular matrix is fairly easy when it comes to calculating the determinant,
+            # you just multiply every diagonal element
             determinant *= pivot
             for row in range(column + 1, size):
                 factor = rows[row][column] / pivot
+                # R2 -> R2 - factor * R1
                 for inner_column in range(column + 1, size):
                     rows[row][inner_column] -= factor * rows[column][inner_column]
 
@@ -311,11 +325,14 @@ class Matrix(Generic[T]):
 
         for column in range(size):
             best_row = max(range(column, size), key=lambda row: abs(rows[row][column]))
+            # check all pivots, if one is 0, then matrix is singular
             if _is_near_zero(rows[best_row][column]):
                 raise SingularMatrixError("matrix is singular and cannot be inverted")
+            # swap
             rows[column], rows[best_row] = rows[best_row], rows[column]
 
             pivot = rows[column][column]
+            # make the pivot into a 1
             rows[column] = [value / pivot for value in rows[column]]
             for row in range(size):
                 if row == column:
@@ -323,7 +340,6 @@ class Matrix(Generic[T]):
                 factor = rows[row][column]
                 if not _is_near_zero(factor):
                     rows[row] = [value - factor * pivot_value for value, pivot_value in zip(rows[row], rows[column])]
-
         return Matrix([[_clean(value) for value in row[size:]] for row in rows])
 
     def rank(self) -> int:
@@ -401,12 +417,6 @@ def cross_product(u: Vector[T], v: Vector[T]):
 
 
 def projection(fov: float, ratio: float, near: float, far: float) -> Matrix[float]:
-    """Build a left-handed perspective projection matrix.
-
-    ``fov`` is in radians.  The resulting matrix maps depth from ``near`` to 0
-    and depth from ``far`` to 1, while x/y map to the assignment's [-1, 1] NDC.
-    Call ``to_column_major`` before supplying it to the provided display program.
-    """
     if fov <= 0 or fov >= 3.141592653589793:
         raise ValueError("fov must be strictly between 0 and pi radians")
     if ratio <= 0:
@@ -415,13 +425,13 @@ def projection(fov: float, ratio: float, near: float, far: float) -> Matrix[floa
         raise ValueError("require 0 < near < far")
 
     scale = 1.0 / tan(fov / 2.0)
-    depth_scale = far / (far - near)
+    depth_scale = -far / (far - near)
     depth_offset = -(far * near) / (far - near)
     return Matrix(
         [
             [scale / ratio, 0.0, 0.0, 0.0],
             [0.0, scale, 0.0, 0.0],
             [0.0, 0.0, depth_scale, depth_offset],
-            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, -1.0, 0.0],
         ]
     )

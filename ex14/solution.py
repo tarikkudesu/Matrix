@@ -6,9 +6,8 @@ from Matrix import projection
 
 
 def main() -> None:
-    # fov is in radians.  The display program expects the columns below in this order.
-    matrix = projection(1.0471975512, 16 / 9, 0.1, 100.0)
-    for column in matrix.to_column_major():
+    matrix = projection(0.1, 3.0 / 2.0, 2.0, 10.)
+    for column in matrix:
         print(", ".join(str(value) for value in column))
 
 
