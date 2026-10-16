@@ -3,10 +3,10 @@
 """Exercise 14 — create a left-handed, [0, 1]-depth projection matrix."""
 
 from Matrix import projection
-
+from math import pi
 
 def main() -> None:
-    matrix = projection(0.1, 3.0 / 2.0, 2.0, 10.)
+    matrix = projection(pi / 2, 1.0, 0.1, 100.0).to_column_major()
     for column in matrix:
         print(", ".join(str(value) for value in column))
 

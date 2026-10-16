@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from math import pi, tan
 from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from math import tan
@@ -9,9 +10,7 @@ from typing import Generic, TypeAlias, TypeVar, overload
 
 Scalar: TypeAlias = int | float | complex
 T = TypeVar("T", bound=Scalar)
-
 EPSILON = 1e-12
-
 
 class DimensionError(ValueError):
     """Raised when an operation is attempted on incompatible dimensions."""
@@ -28,7 +27,6 @@ def _is_near_zero(value: Scalar, *, epsilon: float = EPSILON) -> bool:
 def _clean(value: Scalar, *, epsilon: float = EPSILON) -> Scalar:
     """Turn negligible floating-point noise into zero without changing exact values."""
     return 0 if _is_near_zero(value, epsilon=epsilon) else value
-
 
 @dataclass
 class Vector(Generic[T]):
@@ -70,27 +68,26 @@ class Vector(Generic[T]):
         """Add ``other`` to this vector in place.  Complexity: O(n)."""
         self.check_same_dimension(other)
         for index, value in enumerate(other):
-            self.values[index] += value  # type: ignore[operator]
+            self.values[index] += value
 
     def sub(self, other: Vector[T]) -> None:
         """Subtract ``other`` from this vector in place.  Complexity: O(n)."""
         self.check_same_dimension(other)
         for index, value in enumerate(other):
-            self.values[index] -= value  # type: ignore[operator]
+            self.values[index] -= value
 
     def scl(self, scalar: T) -> None:
         """Scale this vector by ``scalar`` in place.  Complexity: O(n)."""
         for index in range(len(self)):
-            self.values[index] *= scalar  # type: ignore[operator]
+            self.values[index] *= scalar
 
     def dot(self, other: Vector[T]) -> T:
         """Return the inner product.  Complex inputs use conjugation on ``self``."""
         self.check_same_dimension(other)
         total: Scalar = 0
         for left, right in zip(self, other):
-            # ``conjugate`` exists on int, float, and complex.
             total += left.conjugate() * right
-        return total  # type: ignore[return-value]
+        return total
 
     def norm_1(self) -> float:
         """Return the Manhattan (1-) norm.  Complexity: O(n)."""
@@ -179,20 +176,20 @@ class Matrix(Generic[T]):
         self.check_same_shape(other)
         for row in range(self.row_count):
             for column in range(self.column_count):
-                self.rows[row][column] += other.rows[row][column]  # type: ignore[operator]
+                self.rows[row][column] += other.rows[row][column]
 
     def sub(self, other: Matrix[T]) -> None:
         """Subtract ``other`` from this matrix in place.  Complexity: O(mn)."""
         self.check_same_shape(other)
         for row in range(self.row_count):
             for column in range(self.column_count):
-                self.rows[row][column] -= other.rows[row][column]  # type: ignore[operator]
+                self.rows[row][column] -= other.rows[row][column]
 
     def scl(self, scalar: T) -> None:
         """Scale this matrix by ``scalar`` in place.  Complexity: O(mn)."""
         for row in range(self.row_count):
             for column in range(self.column_count):
-                self.rows[row][column] *= scalar  # type: ignore[operator]
+                self.rows[row][column] *= scalar
 
     def mul_vec(self, vector: Vector[T]) -> Vector[T]:
         """Return this matrix multiplied by ``vector``.  Complexity: O(mn)."""
@@ -204,7 +201,7 @@ class Matrix(Generic[T]):
             for matrix_value, vector_value in zip(row, vector):
                 total += matrix_value * vector_value
             result.append(total)
-        return Vector(result)  # type: ignore[arg-type]
+        return Vector(result)
 
     def mul_mat(self, other: Matrix[T]) -> Matrix[T]:
         """Return this matrix multiplied by ``other``.  Complexity: O(mnp)."""
@@ -219,7 +216,7 @@ class Matrix(Generic[T]):
                     total += self.rows[row][pivot] * other.rows[pivot][column]
                 result_row.append(total)
             result.append(result_row)
-        return Matrix(result)  # type: ignore[arg-type]
+        return Matrix(result)
 
     def trace(self) -> T:
         """Return the trace of a square matrix.  Complexity: O(n)."""
@@ -227,7 +224,7 @@ class Matrix(Generic[T]):
         total: Scalar = 0
         for index in range(self.row_count):
             total += self.rows[index][index]
-        return total  # type: ignore[return-value]
+        return total
 
     def transpose(self) -> Matrix[T]:
         """Return the transposed matrix.  Complexity: O(mn)."""
@@ -290,7 +287,7 @@ class Matrix(Generic[T]):
         self._require_square()
         size = self.row_count
         if size == 0:
-            return 1  # type: ignore[return-value]
+            return 1
 
         rows: list[list[Scalar]] = [list(row) for row in self.rows]
         sign: Scalar = 1
@@ -300,7 +297,7 @@ class Matrix(Generic[T]):
             best_row = max(range(column, size), key=lambda row: abs(rows[row][column]))
             pivot = rows[best_row][column]
             if _is_near_zero(pivot):
-                return 0  # type: ignore[return-value]
+                return 0
             if best_row != column:
                 # swaping rows reverses the sign of the determinant
                 rows[column], rows[best_row] = rows[best_row], rows[column]
@@ -315,7 +312,7 @@ class Matrix(Generic[T]):
                 for inner_column in range(column + 1, size):
                     rows[row][inner_column] -= factor * rows[column][inner_column]
 
-        return _clean(sign * determinant)  # type: ignore[return-value]
+        return _clean(sign * determinant)
 
     def inverse(self) -> Matrix[Scalar]:
         """Return the inverse through Gauss-Jordan elimination.  Complexity: O(n³)."""
@@ -363,7 +360,7 @@ def linear_combination(vectors: Sequence[Vector[T]], coefficients: Sequence[T]) 
     for vector, coefficient in zip(vectors, coefficients):
         for index, value in enumerate(vector):
             result[index] += coefficient * value
-    return Vector(result)  # type: ignore[arg-type]
+    return Vector(result)
 
 
 @overload
@@ -400,7 +397,7 @@ def angle_cos(u: Vector[T], v: Vector[T]) -> T:
     denominator = u.norm() * v.norm()
     if _is_near_zero(denominator):
         raise ValueError("the angle with a zero vector is undefined")
-    return u.dot(v) / denominator  # type: ignore[return-value]
+    return u.dot(v) / denominator
 
 
 def cross_product(u: Vector[T], v: Vector[T]):
@@ -416,22 +413,25 @@ def cross_product(u: Vector[T], v: Vector[T]):
     )
 
 
+from math import pi, tan
+
+from math import pi, tan
+
 def projection(fov: float, ratio: float, near: float, far: float) -> Matrix[float]:
-    if fov <= 0 or fov >= 3.141592653589793:
+    if not 0 < fov < pi:
         raise ValueError("fov must be strictly between 0 and pi radians")
     if ratio <= 0:
         raise ValueError("ratio must be positive")
-    if near <= 0 or far <= near:
+    if not 0 < near < far:
         raise ValueError("require 0 < near < far")
 
     scale = 1.0 / tan(fov / 2.0)
     depth_scale = -far / (far - near)
     depth_offset = -(far * near) / (far - near)
-    return Matrix(
-        [
-            [scale / ratio, 0.0, 0.0, 0.0],
-            [0.0, scale, 0.0, 0.0],
-            [0.0, 0.0, depth_scale, depth_offset],
-            [0.0, 0.0, -1.0, 0.0],
-        ]
-    )
+
+    return Matrix([
+        [scale / ratio, 0.0, 0.0, 0.0],
+        [0.0, scale, 0.0, 0.0],
+        [0.0, 0.0, depth_scale, depth_offset],
+        [0.0, 0.0, -1.0, 0.0],
+    ])
